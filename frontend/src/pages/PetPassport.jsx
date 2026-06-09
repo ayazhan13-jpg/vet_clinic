@@ -283,7 +283,7 @@ export default function PetPassport() {
       fd.append('is_confirmed', 'true')  // ветеринар вносит — сразу подтверждено
       await api.post(`/passport/${petId}/vaccination`, fd, { headers:{'Content-Type':'multipart/form-data'} })
       await load(); setVacOpen(false)
-      setVacForm({ vaccine_name:'', batch_number:'', manufacturer:'', manufacture_date:'', expiry_date:'', date_given: new Date().toISOString().split('T')[0], notes:'' })
+      setVacForm({ vaccine_name:'', batch_number:'', manufacturer:'', manufacture_date:'', expiry_date:'', date_given: new Date().toISOString().split('T')[0], notes:'', _customVaccine:false })
     } catch(e) { console.error(e) }
   }
 
@@ -1519,13 +1519,34 @@ ${exams||'<div class="no">Записей нет</div>'}
       {/* ══ Модал: добавить вакцинацию ══ */}
       <Modal open={vacOpen} onClose={() => setVacOpen(false)} title="Добавить запись о вакцинации"
         footer={[<Btn key="c" onClick={() => setVacOpen(false)}>Отмена</Btn>, <Btn key="s" onClick={saveVac} variant="primary">Сохранить</Btn>]}>
-        <Field label="Наименование вакцины" value={vacForm.vaccine_name}
-          options={vaccineTypes.map(t=>({value:t.name,label:t.name}))}
-          onChange={v => {
-            const t = vaccineTypes.find(x=>x.name===v)
-            const nd = t && vacForm.date_given ? new Date(new Date(vacForm.date_given).getTime()+t.interval_days*86400000).toISOString().split('T')[0] : ''
-            setVacForm({...vacForm, vaccine_name:v, vaccine_type:t?.type||'', next_due_date:nd})
-          }} />
+        <div style={{ marginBottom:10 }}>
+          <label style={{ fontSize:11, fontWeight:700, color:'#64748b', display:'block', marginBottom:3, textTransform:'uppercase', letterSpacing:0.5 }}>Наименование вакцины</label>
+          <select
+            value={vaccineTypes.find(x=>x.name===vacForm.vaccine_name) ? vacForm.vaccine_name : (vacForm.vaccine_name ? '__custom__' : '')}
+            onChange={e => {
+              if (e.target.value === '__custom__') {
+                setVacForm({...vacForm, vaccine_name:'', vaccine_type:'', next_due_date:'', _customVaccine: true})
+              } else {
+                const t = vaccineTypes.find(x=>x.name===e.target.value)
+                const nd = t && vacForm.date_given ? new Date(new Date(vacForm.date_given).getTime()+t.interval_days*86400000).toISOString().split('T')[0] : ''
+                setVacForm({...vacForm, vaccine_name:e.target.value, vaccine_type:t?.type||'', next_due_date:nd, _customVaccine: false})
+              }
+            }}
+            style={{ width:'100%', padding:'8px 10px', borderRadius:6, border:'1px solid #cbd5e0', fontSize:14, background:'#fff' }}
+          >
+            <option value="">— не указано —</option>
+            {vaccineTypes.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+            <option value="__custom__">✏️ Ввести вручную...</option>
+          </select>
+          {(vacForm._customVaccine || (vacForm.vaccine_name && !vaccineTypes.find(x=>x.name===vacForm.vaccine_name))) && (
+            <input
+              style={{ width:'100%', padding:'8px 10px', borderRadius:6, border:'1px solid #cbd5e0', fontSize:14, marginTop:6, boxSizing:'border-box' }}
+              placeholder="Введите название вакцины..."
+              value={vacForm.vaccine_name}
+              onChange={e => setVacForm({...vacForm, vaccine_name:e.target.value, _customVaccine:true, next_due_date:''})}
+            />
+          )}
+        </div>
         <Field label="Производитель" value={vacForm.manufacturer} onChange={v => setVacForm({...vacForm,manufacturer:v})} />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           <Field label="№ партии / Серия" value={vacForm.batch_number} onChange={v => setVacForm({...vacForm,batch_number:v})} />
