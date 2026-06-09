@@ -14,15 +14,19 @@ for _name in ['.env', '_env', '../.env', '../_env']:
 else:
     load_dotenv()  # попытка найти автоматически
 
+_port = int(os.getenv("MAIL_PORT", 465))
+_use_ssl = _port == 465
+_use_starttls = _port == 587
+
 conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
     MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),
     MAIL_FROM=os.getenv("MAIL_FROM", "noreply@vetclinic.ru"),
-    MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
+    MAIL_PORT=_port,
     MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
     MAIL_FROM_NAME="ГБУ «Горветстанция г. Байконур»",
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
+    MAIL_STARTTLS=_use_starttls,
+    MAIL_SSL_TLS=_use_ssl,
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True,
 )
