@@ -12,6 +12,13 @@ const SPECIES_CONFIG = {
   other:   { emoji: '🐾', color: '#f5f5f5', accent: '#757575', label: 'Другое' },
 }
 
+function getSpeciesConfig(species) {
+  if (!species) return SPECIES_CONFIG.other
+  if (SPECIES_CONFIG[species]) return SPECIES_CONFIG[species]
+  // Кастомный вид — показываем с дефолтным эмодзи и цветом
+  return { emoji: '🐾', color: '#f5f5f5', accent: '#757575', label: species }
+}
+
 function getAge(birthDate) {
   if (!birthDate) return null
   const birth = new Date(birthDate)
@@ -28,7 +35,7 @@ function getAge(birthDate) {
 }
 
 function PetCard({ pet, onEdit, onDelete, onPassport }) {
-  const cfg = SPECIES_CONFIG[pet.species] || SPECIES_CONFIG.other
+  const cfg = getSpeciesConfig(pet.species)
   const age = getAge(pet.birth_date)
   const genderIcon = pet.gender === 'male' ? '♂' : pet.gender === 'female' ? '♀' : ''
   const genderColor = pet.gender === 'male' ? '#1e88e5' : pet.gender === 'female' ? '#e91e63' : '#999'
@@ -299,8 +306,14 @@ function PetForm({ form, setForm, error, photoFile, setPhotoFile, currentPhoto }
         <FormField label="Вид животного">
           <select
             style={selectStyle}
-            value={form.species}
-            onChange={e => setForm({ ...form, species: e.target.value })}
+            value={['cat','dog','rabbit','bird','hamster','other',''].includes(form.species) ? form.species : 'other'}
+            onChange={e => {
+              if (e.target.value === 'other') {
+                setForm({ ...form, species: 'other', _customSpecies: '' })
+              } else {
+                setForm({ ...form, species: e.target.value, _customSpecies: '' })
+              }
+            }}
             onFocus={focus} onBlur={blur}
           >
             <option value="">— выберите —</option>
@@ -311,6 +324,17 @@ function PetForm({ form, setForm, error, photoFile, setPhotoFile, currentPhoto }
             <option value="hamster">🐹 Хомяк</option>
             <option value="other">🐾 Другое</option>
           </select>
+          {(form.species === 'other' || !['cat','dog','rabbit','bird','hamster','','other'].includes(form.species)) && (
+            <input
+              style={{ ...fieldStyle, marginTop: 8 }}
+              placeholder="Укажите вид животного..."
+              value={form._customSpecies !== undefined ? form._customSpecies : (
+                !['cat','dog','rabbit','bird','hamster','other',''].includes(form.species) ? form.species : ''
+              )}
+              onChange={e => setForm({ ...form, species: e.target.value || 'other', _customSpecies: e.target.value })}
+              onFocus={focus} onBlur={blur}
+            />
+          )}
         </FormField>
       </div>
 
@@ -462,7 +486,9 @@ function Pets() {
     try {
       const fd = new FormData()
       fd.append('name', form.name)
-      if (form.species) fd.append('species', form.species)
+      const speciesVal = form._customSpecies ? form._customSpecies : form.species
+      if (speciesVal && speciesVal !== 'other') fd.append('species', speciesVal)
+      else if (form.species && form.species !== 'other') fd.append('species', form.species)
       if (form.breed) fd.append('breed', form.breed)
       if (form.gender) fd.append('gender', form.gender)
       if (form.weight) fd.append('weight', parseFloat(form.weight))
@@ -488,7 +514,9 @@ function Pets() {
     try {
       const fd = new FormData()
       fd.append('name', editForm.name)
-      if (editForm.species) fd.append('species', editForm.species)
+      const speciesVal = editForm._customSpecies ? editForm._customSpecies : editForm.species
+      if (speciesVal && speciesVal !== 'other') fd.append('species', speciesVal)
+      else if (editForm.species && editForm.species !== 'other') fd.append('species', editForm.species)
       if (editForm.breed) fd.append('breed', editForm.breed)
       if (editForm.gender) fd.append('gender', editForm.gender)
       if (editForm.weight) fd.append('weight', parseFloat(editForm.weight))
