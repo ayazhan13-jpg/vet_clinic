@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+_env
+node_modules/
+dist/
+uploads/
+*.jpg
+*.png

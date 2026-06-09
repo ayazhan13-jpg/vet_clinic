@@ -1,0 +1,69 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --sans: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--sans);
+  font-size: 16px;
+  color-scheme: light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;   /* запрет скролла всей страницы */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;   /* запрет скролла */
+  background: #f4f8f4;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;   /* #root тоже не скроллится */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--sans);
+}
+
+p { margin: 0; }
+
+input, select, textarea, button {
+  font-family: var(--sans);
+}
+
+/* Тонкие зелёные полосы прокрутки — только внутри блоков */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c8e6c9 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #c8e6c9;
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #a5d6a7;
+}
