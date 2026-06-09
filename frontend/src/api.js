@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://172.20.10.2:8004',
+  baseURL: 'https://vetclinic-production-eb40.up.railway.app'
 })
 
 api.interceptors.request.use((config) => {
