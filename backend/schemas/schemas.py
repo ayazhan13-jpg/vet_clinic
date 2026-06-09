@@ -103,7 +103,7 @@ class ServiceOut(BaseModel):
 # --- Расписание ---
 
 class ScheduleCreate(BaseModel):
-    vet_id: Optional[int] = None
+    vet_id: int
     date: date
     time: time
     status: Optional[str] = "free"
@@ -124,6 +124,7 @@ class ScheduleOut(BaseModel):
 class AppointmentCreate(BaseModel):
     pet_id: int
     vet_id: int
+    client_id: Optional[int] = None  # врач может указать клиента явно
     service_id: Optional[int] = None
     date: date
     time: time

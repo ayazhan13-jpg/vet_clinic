@@ -716,6 +716,7 @@ export default function Appointments() {
           await api.post('/appointments/', {
             pet_id: app.pet_id,
             vet_id: app.vet_id,
+            client_id: app.client_id,
             date: plannedProc.date,
             time: plannedProc.time,
             notes: noteText.trim(),

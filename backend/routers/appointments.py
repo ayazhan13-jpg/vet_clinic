@@ -1,28 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import date, datetime
-from pydantic import BaseModel
+from datetime import date
 from backend.database import get_db
-from backend.models.models import Appointment, Schedule, User, Pet, AppointmentStatus, MedicalHistory
+from backend.models.models import Appointment, Schedule, User, Pet, AppointmentStatus
 from backend.schemas.schemas import AppointmentCreate, AppointmentOut
 from backend.services.auth import get_current_user, require_vet
 from backend.services.email_service import (
     send_appointment_created,
     send_appointment_confirmed,
     send_appointment_cancelled,
-    send_appointment_completed,
 )
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
-
-
-class PrescriptionData(BaseModel):
-    anamnesis: Optional[str] = ""
-    diagnosis: Optional[str] = ""
-    medications: Optional[str] = ""
-    recommendations: Optional[str] = ""
-    notes: Optional[str] = ""
 
 
 @router.post("/", response_model=AppointmentOut)
@@ -32,51 +22,58 @@ async def create_appointment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Если врач создаёт запись для клиента — используем client_id из данных
+    is_vet = current_user.role.value in ["vet", "assistant", "head"]
+    actual_client_id = data.client_id if (is_vet and data.client_id) else current_user.id
+
     existing = db.query(Appointment).filter(
-        Appointment.client_id == current_user.id,
+        Appointment.client_id == actual_client_id,
         Appointment.date == data.date,
         Appointment.time == data.time,
         Appointment.status.in_([AppointmentStatus.pending, AppointmentStatus.confirmed])
     ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Вы уже записаны на это время")
+        raise HTTPException(status_code=400, detail="Уже есть запись на это время")
 
+    # Для записей от врача слот может не существовать (создаётся автоматически)
     slot = db.query(Schedule).filter(
         Schedule.vet_id == data.vet_id,
         Schedule.date == data.date,
         Schedule.time == data.time,
-        Schedule.status == "free"
     ).first()
-    if not slot:
+    if slot and slot.status == "free":
+        slot.status = "busy"
+    elif not slot and not is_vet:
         raise HTTPException(status_code=400, detail="Этот слот уже занят")
 
-    slot.status = "busy"
     appointment = Appointment(
-        client_id=current_user.id,
+        client_id=actual_client_id,
         pet_id=data.pet_id,
         vet_id=data.vet_id,
         service_id=data.service_id,
         date=data.date,
         time=data.time,
-        status=AppointmentStatus.pending,
+        status=AppointmentStatus.confirmed if is_vet else AppointmentStatus.pending,
         notes=data.notes
     )
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
 
-    # Отправляем уведомление клиенту
+    # Уведомление клиенту
+    client = db.query(User).filter(User.id == actual_client_id).first()
     pet = db.query(Pet).filter(Pet.id == data.pet_id).first()
     vet = db.query(User).filter(User.id == data.vet_id).first()
-    background_tasks.add_task(
-        send_appointment_created,
-        client_email=current_user.email,
-        client_name=current_user.full_name,
-        pet_name=pet.name if pet else "питомец",
-        date=str(data.date),
-        time=str(data.time)[:5],
-        vet_name=vet.full_name if vet else "врач"
-    )
+    if client:
+        background_tasks.add_task(
+            send_appointment_created,
+            client_email=client.email,
+            client_name=client.full_name,
+            pet_name=pet.name if pet else "питомец",
+            date=str(data.date),
+            time=str(data.time)[:5],
+            vet_name=vet.full_name if vet else "врач"
+        )
 
     return appointment
 
@@ -142,7 +139,6 @@ async def confirm_appointment(
     db.commit()
     db.refresh(appointment)
 
-    # Уведомляем клиента
     client = db.query(User).filter(User.id == appointment.client_id).first()
     pet = db.query(Pet).filter(Pet.id == appointment.pet_id).first()
     if client:
@@ -161,10 +157,8 @@ async def confirm_appointment(
 
 
 @router.put("/{appointment_id}/complete", response_model=AppointmentOut)
-async def complete_appointment(
+def complete_appointment(
     appointment_id: int,
-    prescription: PrescriptionData = None,
-    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_vet)
 ):
@@ -180,74 +174,9 @@ async def complete_appointment(
     if slot:
         slot.status = "done"
 
-    # Сохраняем рецепт в поле vet_message
-    if prescription:
-        parts = []
-        if prescription.anamnesis:
-            parts.append(f"Анамнез: {prescription.anamnesis}")
-        if prescription.diagnosis:
-            parts.append(f"Диагноз: {prescription.diagnosis}")
-        if prescription.medications:
-            parts.append(f"Препараты:\n{prescription.medications}")
-        if prescription.recommendations:
-            parts.append(f"Рекомендации:\n{prescription.recommendations}")
-        if prescription.notes:
-            parts.append(f"Заметки: {prescription.notes}")
-        appointment.vet_message = "\n\n".join(parts)
-
     appointment.status = AppointmentStatus.completed
     db.commit()
     db.refresh(appointment)
-
-    # ── Автоматически создаём/обновляем запись в истории болезней ──────────
-    if appointment.pet_id:
-        existing = db.query(MedicalHistory).filter(
-            MedicalHistory.appointment_id == appointment_id
-        ).first()
-        visit_dt = datetime.combine(appointment.date, appointment.time) if appointment.time else datetime(appointment.date.year, appointment.date.month, appointment.date.day)
-        if existing:
-            # Обновляем существующую запись (защита от дублирования)
-            existing.anamnesis = prescription.anamnesis if prescription else ""
-            existing.diagnosis = prescription.diagnosis if prescription else ""
-            existing.medications = prescription.medications if prescription else ""
-            existing.recommendations = prescription.recommendations if prescription else ""
-            existing.notes = prescription.notes if prescription else ""
-            existing.updated_at = datetime.utcnow()
-        else:
-            history = MedicalHistory(
-                pet_id=appointment.pet_id,
-                appointment_id=appointment_id,
-                visit_date=visit_dt,
-                anamnesis=prescription.anamnesis if prescription else "",
-                diagnosis=prescription.diagnosis if prescription else "",
-                medications=prescription.medications if prescription else "",
-                recommendations=prescription.recommendations if prescription else "",
-                notes=prescription.notes if prescription else "",
-                vet_id=current_user.id,
-            )
-            db.add(history)
-        db.commit()
-
-    # Отправляем письмо клиенту с рецептом
-    client = db.query(User).filter(User.id == appointment.client_id).first()
-    pet = db.query(Pet).filter(Pet.id == appointment.pet_id).first()
-    vet = db.query(User).filter(User.id == appointment.vet_id).first()
-
-    if client and client.email and background_tasks:
-        background_tasks.add_task(
-            send_appointment_completed,
-            client_email=client.email,
-            client_name=client.full_name,
-            pet_name=pet.name if pet else "—",
-            date=str(appointment.date),
-            vet_name=vet.full_name if vet else "—",
-            anamnesis=prescription.anamnesis if prescription else "",
-            diagnosis=prescription.diagnosis if prescription else "",
-            medications=prescription.medications if prescription else "",
-            recommendations=prescription.recommendations if prescription else "",
-            notes=prescription.notes if prescription else "",
-        )
-
     return appointment
 
 
@@ -278,7 +207,6 @@ async def cancel_appointment(
     db.commit()
     db.refresh(appointment)
 
-    # Уведомляем клиента если отменяет врач
     if current_user.role in ["vet", "assistant"]:
         client = db.query(User).filter(User.id == appointment.client_id).first()
         pet = db.query(Pet).filter(Pet.id == appointment.pet_id).first()
