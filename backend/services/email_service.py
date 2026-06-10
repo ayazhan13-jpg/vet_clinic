@@ -1,79 +1,48 @@
 # -*- coding: utf-8 -*-
 import os
 import httpx
-from pathlib import Path
 from dotenv import load_dotenv
 
-_base = Path(__file__).resolve().parent.parent
-for _name in ['.env', '_env', '../.env', '../_env']:
-    _p = _base / _name
-    if _p.exists():
-        load_dotenv(_p)
-        break
-else:
-    load_dotenv()
+load_dotenv()
 
-BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
-MAIL_FROM = os.getenv("MAIL_FROM", "rololodbrok8@gmail.com")
-MAIL_FROM_NAME = "ГБУ «Горветстанция г. Байконур»"
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+MAIL_FROM = os.getenv("MAIL_FROM", "onboarding@resend.dev")
+MAIL_FROM_NAME = "Ветеринарная клиника"
 
 
 async def send_email(to: str, subject: str, body: str):
-    if BREVO_API_KEY:
-        # Railway — через Brevo API
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    "https://api.brevo.com/v3/smtp/email",
-                    headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
-                    json={
-                        "sender": {"name": MAIL_FROM_NAME, "email": MAIL_FROM},
-                        "to": [{"email": to}],
-                        "subject": subject,
-                        "htmlContent": body,
-                    },
-                    timeout=15,
-                )
-                if resp.status_code in (200, 201):
-                    print(f"[Email sent via Brevo] To: {to} | Subject: {subject}")
-                else:
-                    print(f"[Email error] Status {resp.status_code}: {resp.text}")
-        except Exception as e:
-            print(f"[Email error] {e}")
-    else:
-        # Локально — через Gmail SMTP
-        mail_username = os.getenv("MAIL_USERNAME", "")
-        mail_password = os.getenv("MAIL_PASSWORD", "")
-        mail_server = os.getenv("MAIL_SERVER", "smtp.gmail.com")
-        mail_port = int(os.getenv("MAIL_PORT", 587))
+    """Отправка письма через Resend API (работает на Render)"""
+    if not RESEND_API_KEY:
+        print(f"[Email disabled] To: {to} | Subject: {subject}")
+        return
 
-        if not mail_username:
-            print(f"[Email disabled] To: {to} | Subject: {subject}")
-            return
-        try:
-            import aiosmtplib
-            from email.mime.multipart import MIMEMultipart
-            from email.mime.text import MIMEText
+    payload = {
+        "from": f"{MAIL_FROM_NAME} <{MAIL_FROM}>",
+        "to": [to],
+        "subject": subject,
+        "html": body,
+    }
 
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = subject
-            msg["From"] = f"{MAIL_FROM_NAME} <{mail_username}>"
-            msg["To"] = to
-            msg.attach(MIMEText(body, "html", "utf-8"))
-
-            await aiosmtplib.send(
-                msg,
-                hostname=mail_server,
-                port=mail_port,
-                username=mail_username,
-                password=mail_password,
-                start_tls=True,
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                timeout=10,
             )
-            print(f"[Email sent via SMTP] To: {to} | Subject: {subject}")
-        except Exception as e:
-            print(f"[Email error] {e}")
+        if resp.status_code in (200, 201):
+            print(f"[Email sent] To: {to} | Subject: {subject}")
+        else:
+            print(f"[Email error] Status {resp.status_code}: {resp.text}")
+    except Exception as e:
+        print(f"[Email error] {e}")
 
 
+# --- Шаблоны писем ---
 # ── Базовый HTML-шаблон ───────────────────────────────────────────────────────
 def base_template(header_color: str, header_text: str, body_html: str) -> str:
     return f"""
