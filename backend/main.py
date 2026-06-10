@@ -14,13 +14,15 @@ from backend.routers.users import router as users_router
 from backend.routers.passport import router as passport_router
 from backend.routers.reports import router as reports_router
 from backend.routers.chat import router as chat_router
-from backend.routers.lab import router as lab_router
 from datetime import date, timedelta, time as dt_time
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import os
 import asyncio
 
 Base.metadata.create_all(bind=engine)
 os.makedirs("uploads", exist_ok=True)
+
+scheduler = AsyncIOScheduler(timezone="Asia/Almaty")
 
 
 def auto_generate_schedule():
@@ -73,7 +75,6 @@ async def send_vaccination_reminders():
         today = date.today()
         sent = 0
 
-        # Напоминания за 7 и 30 дней
         for days in [7, 30]:
             target_date = today + timedelta(days=days)
             vaccinations = db.query(Vaccination).filter(
@@ -95,7 +96,6 @@ async def send_vaccination_reminders():
                 )
                 sent += 1
 
-        # Просроченные вакцинации
         overdue = db.query(Vaccination).filter(
             Vaccination.next_due_date < today,
             Vaccination.is_confirmed == True
@@ -125,7 +125,7 @@ app = FastAPI(title="Vet Clinic AIS")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://172.20.10.2:5173", "https://wholesome-ambition-production-bdac.up.railway.app", "https://vet-clinic-frontend.onrender.com"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
@@ -141,7 +141,6 @@ app.include_router(users_router)
 app.include_router(passport_router)
 app.include_router(reports_router)
 app.include_router(chat_router)
-app.include_router(lab_router)
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -150,6 +149,15 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 async def startup_event():
     auto_generate_schedule()
     await send_vaccination_reminders()
+    # Запускаем планировщик — каждый день в 9:00 по Алматы
+    scheduler.add_job(send_vaccination_reminders, "cron", hour=9, minute=0)
+    scheduler.start()
+    print("Планировщик запущен — напоминания каждый день в 9:00")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    scheduler.shutdown()
 
 
 @app.get("/")
