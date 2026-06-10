@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://vetclinic-production-eb40.up.railway.app'
+  baseURL: 'https://vet-clinic-backend-pw2s.onrender.com'
 })
 
 api.interceptors.request.use((config) => {
