@@ -67,29 +67,24 @@ def auto_generate_schedule():
 
 
 async def send_vaccination_reminders():
-    """Отправляем напоминания о прививках которые через 7 или 30 дней"""
     from backend.services.email_service import send_vaccination_reminder
     db = SessionLocal()
     try:
         today = date.today()
-        remind_days = [7, 30]
         sent = 0
 
-        for days in remind_days:
+        # Напоминания за 7 и 30 дней
+        for days in [7, 30]:
             target_date = today + timedelta(days=days)
             vaccinations = db.query(Vaccination).filter(
                 Vaccination.next_due_date == target_date,
                 Vaccination.is_confirmed == True
             ).all()
-
             for vac in vaccinations:
                 pet = db.query(Pet).filter(Pet.id == vac.pet_id).first()
-                if not pet:
-                    continue
+                if not pet: continue
                 owner = db.query(User).filter(User.id == pet.owner_id).first()
-                if not owner:
-                    continue
-
+                if not owner or not owner.email: continue
                 await send_vaccination_reminder(
                     client_email=owner.email,
                     client_name=owner.full_name,
@@ -99,6 +94,27 @@ async def send_vaccination_reminders():
                     days_left=days
                 )
                 sent += 1
+
+        # Просроченные вакцинации
+        overdue = db.query(Vaccination).filter(
+            Vaccination.next_due_date < today,
+            Vaccination.is_confirmed == True
+        ).all()
+        for vac in overdue:
+            pet = db.query(Pet).filter(Pet.id == vac.pet_id).first()
+            if not pet: continue
+            owner = db.query(User).filter(User.id == pet.owner_id).first()
+            if not owner or not owner.email: continue
+            days_overdue = (today - vac.next_due_date).days
+            await send_vaccination_reminder(
+                client_email=owner.email,
+                client_name=owner.full_name,
+                pet_name=pet.name,
+                vaccine_name=vac.vaccine_name,
+                due_date=str(vac.next_due_date),
+                days_left=-days_overdue
+            )
+            sent += 1
 
         print(f"Напоминания о прививках: отправлено {sent}")
     finally:
