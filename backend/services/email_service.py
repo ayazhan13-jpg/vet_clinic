@@ -14,35 +14,64 @@ else:
     load_dotenv()
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
-MAIL_FROM = os.getenv("MAIL_FROM", "ayazhan13@gmail.com")
+MAIL_FROM = os.getenv("MAIL_FROM", "rololodbrok8@gmail.com")
 MAIL_FROM_NAME = "ГБУ «Горветстанция г. Байконур»"
 
+
 async def send_email(to: str, subject: str, body: str):
-    if not BREVO_API_KEY:
-        print(f"[Email disabled] To: {to} | Subject: {subject}")
-        return
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.brevo.com/v3/smtp/email",
-                headers={
-                    "api-key": BREVO_API_KEY,
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "sender": {"name": MAIL_FROM_NAME, "email": MAIL_FROM},
-                    "to": [{"email": to}],
-                    "subject": subject,
-                    "htmlContent": body,
-                },
-                timeout=15,
+    if BREVO_API_KEY:
+        # Railway — через Brevo API
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+                    json={
+                        "sender": {"name": MAIL_FROM_NAME, "email": MAIL_FROM},
+                        "to": [{"email": to}],
+                        "subject": subject,
+                        "htmlContent": body,
+                    },
+                    timeout=15,
+                )
+                if resp.status_code in (200, 201):
+                    print(f"[Email sent via Brevo] To: {to} | Subject: {subject}")
+                else:
+                    print(f"[Email error] Status {resp.status_code}: {resp.text}")
+        except Exception as e:
+            print(f"[Email error] {e}")
+    else:
+        # Локально — через Gmail SMTP
+        mail_username = os.getenv("MAIL_USERNAME", "")
+        mail_password = os.getenv("MAIL_PASSWORD", "")
+        mail_server = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+        mail_port = int(os.getenv("MAIL_PORT", 587))
+
+        if not mail_username:
+            print(f"[Email disabled] To: {to} | Subject: {subject}")
+            return
+        try:
+            import aiosmtplib
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = f"{MAIL_FROM_NAME} <{mail_username}>"
+            msg["To"] = to
+            msg.attach(MIMEText(body, "html", "utf-8"))
+
+            await aiosmtplib.send(
+                msg,
+                hostname=mail_server,
+                port=mail_port,
+                username=mail_username,
+                password=mail_password,
+                start_tls=True,
             )
-            if resp.status_code in (200, 201):
-                print(f"[Email sent] To: {to} | Subject: {subject}")
-            else:
-                print(f"[Email error] Status {resp.status_code}: {resp.text}")
-    except Exception as e:
-        print(f"[Email error] {e}")
+            print(f"[Email sent via SMTP] To: {to} | Subject: {subject}")
+        except Exception as e:
+            print(f"[Email error] {e}")
 
 
 # ── Базовый HTML-шаблон ───────────────────────────────────────────────────────
@@ -83,6 +112,7 @@ def base_template(header_color: str, header_text: str, body_html: str) -> str:
 </body>
 </html>
 """
+
 
 def info_block(rows: list) -> str:
     items = "".join(
