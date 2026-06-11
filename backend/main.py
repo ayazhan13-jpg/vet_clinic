@@ -16,6 +16,7 @@ from backend.routers.reports import router as reports_router
 from backend.routers.chat import router as chat_router
 from datetime import date, timedelta, time as dt_time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from backend.routers.lab import router as lab_router
 import os
 import asyncio
 
@@ -141,6 +142,7 @@ app.include_router(users_router)
 app.include_router(passport_router)
 app.include_router(reports_router)
 app.include_router(chat_router)
+app.include_router(lab_router)
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
