@@ -329,7 +329,7 @@ th{background:#f5f5f5;font-weight:bold;text-align:left;font-size:9pt;text-transf
 <tr><td class="lbl">Адрес / Address</td><td>${passport?.owner_address||'—'}</td><td class="lbl">E-mail</td><td>${owner.email||'—'}</td></tr>
 <tr><td class="lbl">Город / City</td><td>${passport?.owner_city||'—'}</td><td class="lbl">Индекс / Postcode</td><td>${passport?.owner_zip||'—'}</td></tr></table>
 <div class="stitle">Раздел II — Описание животного / Description of Animal</div>
-<table><tr><td class="lbl">Кличка / Name</td><td>${pet.name}</td><td class="lbl">Вид / Species</td><td>${speciesRu[pet.species]||'—'}</td></tr>
+<table><tr><td class="lbl">Кличка / Name</td><td>${pet.name}</td><td class="lbl">Вид / Species</td><td>${speciesRu[pet.species]||pet.species||'—'}</td></tr>
 <tr><td class="lbl">Порода / Breed</td><td>${pet.breed||'—'}</td><td class="lbl">Пол / Sex</td><td>${genderRu[pet.gender]||'—'}</td></tr>
 <tr><td class="lbl">Дата рождения</td><td>${fmtS(pet.birth_date)}</td><td class="lbl">Вес / Weight</td><td>${pet.weight?pet.weight+' кг':'—'}</td></tr>
 <tr><td class="lbl">Окрас / Coat colour</td><td>${passport?.coat_color||'—'}</td><td class="lbl">Особые отметины</td><td>${passport?.special_marks||'—'}</td></tr></table>
@@ -402,7 +402,7 @@ ${exams||'<div class="no">Записей нет</div>'}
     <div class="org">ул. Носова, д. 14 &nbsp;&middot;&nbsp; +7 (33622) 4-62-68 &nbsp;&middot;&nbsp; gvsbaykonur2005@yandex.ru</div>
     <h1>Ветеринарный паспорт</h1>
     <div class="pname">${pet.name}</div>
-    <div class="meta">${speciesRu[pet.species]||'—'} &middot; ${pet.breed||'—'} &middot; ${genderRu[pet.gender]||'—'} &middot; ${getAge(pet.birth_date)||'—'}</div>
+    <div class="meta">${speciesRu[pet.species]||pet.species||'—'} &middot; ${pet.breed||'—'} &middot; ${genderRu[pet.gender]||'—'} &middot; ${getAge(pet.birth_date)||'—'}</div>
     ${passport?.is_confirmed ? '<div class="verified">&#10003; Паспорт верифицирован ветеринарным врачом</div>' : ''}
   </div>
 
@@ -415,7 +415,7 @@ ${exams||'<div class="no">Записей нет</div>'}
 
   <div class="stitle">Раздел II — Описание животного / Description of Animal</div>
   <table>
-    <tr><td class="lbl">Кличка / Name</td><td>${pet.name}</td><td class="lbl">Вид / Species</td><td>${speciesRu[pet.species]||'—'}</td></tr>
+    <tr><td class="lbl">Кличка / Name</td><td>${pet.name}</td><td class="lbl">Вид / Species</td><td>${speciesRu[pet.species]||pet.species||'—'}</td></tr>
     <tr><td class="lbl">Порода / Breed</td><td>${pet.breed||'—'}</td><td class="lbl">Пол / Sex</td><td>${genderRu[pet.gender]||'—'}</td></tr>
     <tr><td class="lbl">Дата рождения</td><td>${fmtS(pet.birth_date)}</td><td class="lbl">Вес / Weight</td><td>${pet.weight?pet.weight+' кг':'—'}</td></tr>
     <tr><td class="lbl">Окрас / Coat</td><td>${passport?.coat_color||'—'}</td><td class="lbl">Особые отметины</td><td>${passport?.special_marks||'—'}</td></tr>
@@ -705,7 +705,7 @@ ${exams||'<div class="no">Записей нет</div>'}
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr' }}>
                     {[
                       ['Кличка / Name', pet.name],
-                      ['Вид / Species', speciesRu[pet.species]||'—'],
+                      ['Вид / Species', speciesRu[pet.species]||pet.species||'—'],
                       ['Порода / Breed', pet.breed||'—'],
                       ['Пол / Sex', genderRu[pet.gender]||'—'],
                       ['Дата рождения / Date of birth', fmt(pet.birth_date)],
@@ -1050,7 +1050,7 @@ ${exams||'<div class="no">Записей нет</div>'}
                         <div class="org">Администрация города Байконур · ГБУ «Городская ветеринарная станция города Байконур»</div>
                         <div class="org">ул. Носова, д. 14 · +7 (33622) 4-62-68</div>
                         <h1>История болезней</h1>
-                        <div class="meta"><b>Животное:</b> ${pet.name} (${speciesRu[pet.species]||'—'}, ${pet.breed||'—'})</div>
+                        <div class="meta"><b>Животное:</b> ${pet.name} (${speciesRu[pet.species]||pet.species||'—'}, ${pet.breed||'—'})</div>
                         <div class="meta"><b>Владелец:</b> ${owner.full_name||'—'} · ${owner.phone||'—'}</div>
                       </div>
                       <table>
