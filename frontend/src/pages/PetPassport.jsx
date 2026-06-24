@@ -236,7 +236,7 @@ export default function PetPassport() {
   }).filter(v => v.days <= 90).sort((a,b) => a.days-b.days)
 
   const photoUrl = pet.photo_url
-    ? (pet.photo_url.startsWith('http') ? pet.photo_url : `http://localhost:8003${pet.photo_url}`)
+    ? (pet.photo_url.startsWith('http') ? pet.photo_url : `https://vet-clinic-backend-pw2s.onrender.com${pet.photo_url}`)
     : null
 
   // Сохранить паспорт

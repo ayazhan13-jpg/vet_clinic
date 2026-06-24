@@ -81,7 +81,7 @@ function PetCard({ pet, onEdit, onDelete, onPassport }) {
         }}>
           {pet.photo_url
             ? <img
-                src={pet.photo_url.startsWith('http') ? pet.photo_url : `http://localhost:8004${pet.photo_url}`}
+                src={pet.photo_url.startsWith('http') ? pet.photo_url : `https://vet-clinic-backend-pw2s.onrender.com${pet.photo_url}`}
                 alt={pet.name}
                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             : cfg.emoji
@@ -234,7 +234,7 @@ function PetForm({ form, setForm, error, photoFile, setPhotoFile, currentPhoto }
   const previewUrl = photoFile
     ? URL.createObjectURL(photoFile)
     : currentPhoto
-      ? (currentPhoto.startsWith('http') ? currentPhoto : `http://localhost:8004${currentPhoto}`)
+      ? (currentPhoto.startsWith('http') ? currentPhoto : `https://vet-clinic-backend-pw2s.onrender.com${currentPhoto}`)
       : null
 
   return (
