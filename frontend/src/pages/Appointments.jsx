@@ -722,7 +722,7 @@ export default function Appointments() {
             notes: noteText.trim(),
           }).catch(() => {})
           // Создаём слот в расписании у врача
-          await api.post('/appointments/schedule/slot', {
+          await api.post('/schedule/', {
             vet_id: app.vet_id,
             date: plannedProc.date,
             time: plannedProc.time,
