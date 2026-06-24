@@ -304,6 +304,8 @@ function validateResults(results, services) {
       if (empty) errs[svc] = 'Выберите результат для каждой инфекции'
     } else if (type === 'plt') {
       if (!data.value?.trim()) errs[svc] = 'Введите значение тромбоцитов'
+    } else if (['punkt','mocha','mocha_express','mocha_special','vagina','kopro','scrap','wood','feces_para'].includes(type)) {
+      // сложные формы — не требуем одно поле value
     } else {
       if (!data.value?.trim()) errs[svc] = 'Обязательное поле'
     }
