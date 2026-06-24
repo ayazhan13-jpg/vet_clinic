@@ -531,7 +531,7 @@ function Pets() {
 
   const handleDelete = async () => {
     try {
-      await api.post(`/pets/${selectedPet.id}/delete`)
+      api.delete(`/pets/${selectedPet.id}`)
       setDeleteOpen(false); loadPets()
     } catch (e) { console.error(e) }
   }
