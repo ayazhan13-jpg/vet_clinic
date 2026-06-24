@@ -60,7 +60,7 @@ function ClientModal({ client, pets, onClose, onOpenPassport }) {
                     <div key={pet.id} style={{ background:cfg.color, borderRadius:14, padding:'14px 16px', display:'flex', alignItems:'center', gap:12, border:`1.5px solid ${cfg.accent}33` }}>
                       <div style={{ width:48, height:48, borderRadius:'50%', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0, boxShadow:`0 0 0 2px ${cfg.accent}44` }}>
                         {pet.photo_url
-                          ? <img src={pet.photo_url.startsWith('http') ? pet.photo_url : `http://localhost:8003${pet.photo_url}`} alt={pet.name} style={{ width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover' }} />
+                          ? <img src={pet.photo_url.startsWith('http') ? pet.photo_url : `https://vet-clinic-backend-pw2s.onrender.com${pet.photo_url}`} alt={pet.name} style={{ width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover' }} />
                           : speciesEmoji[pet.species] || '🐾'}
                       </div>
                       <div style={{ flex:1 }}>
@@ -353,7 +353,7 @@ export default function AllPets() {
                         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                           <div style={{ position:'relative', flexShrink:0 }}>
                             <div style={{ width:34, height:34, borderRadius:'50%', background:archived?'#e5e7eb':cfg.color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, filter:archived?'grayscale(1)':'none' }}>
-                              {pet.photo_url ? <img src={pet.photo_url.startsWith('http')?pet.photo_url:`http://localhost:8003${pet.photo_url}`} alt={pet.name} style={{ width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover' }} /> : speciesEmoji[pet.species]||'🐾'}
+                              {pet.photo_url ? <img src={pet.photo_url.startsWith('http')?pet.photo_url:`https://vet-clinic-backend-pw2s.onrender.com${pet.photo_url}`} alt={pet.name} style={{ width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover' }} /> : speciesEmoji[pet.species]||'🐾'}
                             </div>
                             {archived && (
                               <div style={{ position:'absolute', bottom:-2, right:-2, background:'#6b7280', borderRadius:'50%', width:14, height:14, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, color:'#fff', border:'1.5px solid #fff' }}>📦</div>
