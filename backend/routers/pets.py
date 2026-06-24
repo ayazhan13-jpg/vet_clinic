@@ -135,15 +135,22 @@ def delete_pet(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    from backend.models.models import Appointment, Procedure, WeightHistory
+    from backend.models.models import Appointment, Procedure, WeightHistory, Vaccination, PetPassport, PetHealthLog, MedicalHistory, LabOrder
     pet = db.query(Pet).filter(Pet.id == pet_id).first()
     if not pet:
         raise HTTPException(status_code=404, detail="Питомец не найден")
     if pet.owner_id != current_user.id and current_user.role not in ["vet", "assistant"]:
         raise HTTPException(status_code=403, detail="Нет доступа")
+    db.query(Vaccination).filter(Vaccination.pet_id == pet_id).delete()
+    db.query(PetHealthLog).filter(PetHealthLog.pet_id == pet_id).delete()
+    db.query(MedicalHistory).filter(MedicalHistory.pet_id == pet_id).delete()
+    db.query(LabOrder).filter(LabOrder.pet_id == pet_id).delete()
     db.query(Appointment).filter(Appointment.pet_id == pet_id).delete()
     db.query(Procedure).filter(Procedure.pet_id == pet_id).delete()
     db.query(WeightHistory).filter(WeightHistory.pet_id == pet_id).delete()
+    passport = db.query(PetPassport).filter(PetPassport.pet_id == pet_id).first()
+    if passport:
+        db.delete(passport)
     db.delete(pet)
     db.commit()
     return {"message": "Питомец удалён"}
@@ -155,15 +162,22 @@ def delete_pet_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    from backend.models.models import Appointment, Procedure, WeightHistory
+    from backend.models.models import Appointment, Procedure, WeightHistory, Vaccination, PetPassport, PetHealthLog, MedicalHistory, LabOrder
     pet = db.query(Pet).filter(Pet.id == pet_id).first()
     if not pet:
         raise HTTPException(status_code=404, detail="Питомец не найден")
     if pet.owner_id != current_user.id and current_user.role not in ["vet", "assistant"]:
         raise HTTPException(status_code=403, detail="Нет доступа")
+    db.query(Vaccination).filter(Vaccination.pet_id == pet_id).delete()
+    db.query(PetHealthLog).filter(PetHealthLog.pet_id == pet_id).delete()
+    db.query(MedicalHistory).filter(MedicalHistory.pet_id == pet_id).delete()
+    db.query(LabOrder).filter(LabOrder.pet_id == pet_id).delete()
     db.query(Appointment).filter(Appointment.pet_id == pet_id).delete()
     db.query(Procedure).filter(Procedure.pet_id == pet_id).delete()
     db.query(WeightHistory).filter(WeightHistory.pet_id == pet_id).delete()
+    passport = db.query(PetPassport).filter(PetPassport.pet_id == pet_id).first()
+    if passport:
+        db.delete(passport)
     db.delete(pet)
     db.commit()
     return {"message": "Питомец удалён"}
